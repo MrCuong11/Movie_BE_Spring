@@ -1,6 +1,7 @@
 package com.movie.Movie_BE.Exception;
 
 
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -16,5 +17,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(value = MethodArgumentNotValidException.class)
     ResponseEntity<String> handlingValidation(MethodArgumentNotValidException m){
         return ResponseEntity.badRequest().body(m.getFieldError().getDefaultMessage());
+    }
+
+
+    @ExceptionHandler(value = DuplicateKeyException.class)
+    ResponseEntity<String> handlingDuplicate(DuplicateKeyException d){
+        return ResponseEntity.badRequest().body(d.getMessage());
     }
 }
