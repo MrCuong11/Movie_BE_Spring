@@ -1,6 +1,8 @@
 package com.movie.Movie_BE.Service;
 
+import com.movie.Movie_BE.Model.Token;
 import com.movie.Movie_BE.Model.User;
+import com.movie.Movie_BE.Repository.TokenRepository;
 import com.movie.Movie_BE.Repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
@@ -13,6 +15,8 @@ public class UserService {
 
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private TokenRepository tokenRepository;
 
     public User saveUser(User user) {
         Optional<User> existingUser = userRepository.findByEmail(user.getEmail());
@@ -28,13 +32,24 @@ public class UserService {
         User user = userRepository.findByUserName(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Lưu token vào cơ sở dữ liệu
-        if (fcmToken != null && !fcmToken.isEmpty()) {
-            // Cập nhật hoặc lưu token mới
-            user.setFcmToken(fcmToken);
-            userRepository.save(user);
-        } else {
-            throw new IllegalArgumentException("FCM token không hợp lệ");
+        if(fcmToken == null && fcmToken.isEmpty()){
+            throw new IllegalArgumentException("FCM token doesn't valid");
+        }
+
+        Token existingToken = tokenRepository.findByToken(fcmToken);
+        if(existingToken != null){
+            if(!existingToken.getUser().getUid().equals(user.getUid())){
+                throw new IllegalArgumentException("FCM token already used by other User");
+            }
+
+            existingToken.setCreatedAt(java.time.LocalDateTime.now());
+            tokenRepository.save(existingToken);
+        }else{
+            Token newToken = new Token();
+            newToken.setToken(fcmToken);
+            newToken.setUser(user);
+            newToken.setCreatedAt(java.time.LocalDateTime.now());
+            tokenRepository.save(newToken);
         }
     }
 }

@@ -41,10 +41,13 @@ public class FilmService {
     HistoryService historyService;
     @Autowired
     NotificationService notificationService;
+    @Autowired PushNotificationService pushNotificationService;
 
     @Autowired
     private ApplicationStateRepository applicationStateRepository;
 
+    @Autowired
+    private TokenRepository tokenRepository;
     private Long previousTotalElements = 0L;
 
     @PersistenceContext
@@ -74,7 +77,7 @@ public class FilmService {
                 })
                 .collect(Collectors.toList());
 
-
+        // Gửi thông báo nếu có phim mới
         if (previousTotalElements > 0 && filmPage.getTotalElements() > previousTotalElements) {
             Long totalFilmUpdate = filmPage.getTotalElements() - previousTotalElements;
             sendNotificationToUsers(totalFilmUpdate);
@@ -91,11 +94,31 @@ public class FilmService {
     @Async
     void sendNotificationToUsers(Long totalFilmUpdate) {
         List<User> users = userRepository.findAll();
+
         users.forEach(user -> {
-            String message = "Có "+ totalFilmUpdate +" phim mới cập nhật!";
+            // Tạo thông báo
+            String message = "Có " + totalFilmUpdate + " phim mới cập nhật!";
             notificationService.createNotification(user, message, "NEW_FILM_UPDATE", null);
+
+            // Gửi thông báo qua FCM đến các token của user
+            List<Token> userTokens = tokenRepository.findByUser(user);
+
+            if (userTokens != null && !userTokens.isEmpty()) {
+                String title = "Cập nhật phim mới";
+                userTokens.forEach(token -> {
+                    if (token.getToken() != null && !token.getToken().isEmpty()) {
+                        try {
+                            pushNotificationService.sendPushNotification(token.getToken(), title, message);
+                        } catch (Exception e) {
+                            System.err.println("Lỗi khi gửi thông báo đến token: " + token.getToken());
+                            e.printStackTrace();
+                        }
+                    }
+                });
+            }
         });
     }
+
 
 
     //Filter film by type

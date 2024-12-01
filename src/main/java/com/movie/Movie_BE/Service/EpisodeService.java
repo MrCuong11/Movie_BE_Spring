@@ -1,11 +1,9 @@
 package com.movie.Movie_BE.Service;
 
-import com.movie.Movie_BE.Model.Episode;
-import com.movie.Movie_BE.Model.Favorite;
-import com.movie.Movie_BE.Model.Film;
-import com.movie.Movie_BE.Model.User;
+import com.movie.Movie_BE.Model.*;
 import com.movie.Movie_BE.Repository.EpisodeRepository;
 import com.movie.Movie_BE.Repository.FilmRepository;
+import com.movie.Movie_BE.Repository.TokenRepository;
 import com.movie.Movie_BE.Repository.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +30,10 @@ public class EpisodeService {
 
     @Autowired
     private NotificationService notificationService;
+    @Autowired
+    private TokenRepository tokenRepository;
+    @Autowired
+    private PushNotificationService pushNotificationService;
 
     @Transactional
     public Film addOrUpdateEpisodes(Long filmId, List<Episode> episodes) {
@@ -56,7 +58,7 @@ public class EpisodeService {
                 // Thêm tập phim mới
                 newEpisode.setFilm(film);
                 existingEpisodes.add(newEpisode);
-                sendNotificationToUsers(film, newEpisode);
+                sendNotificationToUsersFavorite(film, newEpisode);
             }
         }
 
@@ -89,21 +91,43 @@ public class EpisodeService {
 
 
     @Async
-    public void sendNotificationToUsers(Film film, Episode episode) {
+    public void sendNotificationToUsersFavorite(Film film, Episode episode) {
         List<Favorite> favoriteFilm = film.getFavorites();
         List<String> userFavoriteFilms = favoriteFilm.stream()
                 .map(Favorite::getUsername)
                 .distinct()
                 .collect(Collectors.toList());
 
-        // Lấy người dùng từ danh sách yêu thích
+        // get entire object user
         List<User> users = userRepository.findAllByUserNameIn(userFavoriteFilms);
 
+        // Tạo nội dung thông báo
         String message = String.format("Phim %s vừa có tập mới: %s!", film.getName(), episode.getName());
-        for (User user : users) {
+        String title = "Tập phim mới";
+
+        // Gửi thông báo đến từng user
+        users.forEach(user -> {
             notificationService.createNotification(user, message, "NEW_EPISODE", film.getId());
-        }
+
+            // Lấy danh sách token của user
+            List<Token> userTokens = tokenRepository.findByUser(user);
+
+            // Gửi thông báo qua FCM
+            if (userTokens != null && !userTokens.isEmpty()) {
+                userTokens.forEach(token -> {
+                    if (token.getToken() != null && !token.getToken().isEmpty()) {
+                        try {
+                            pushNotificationService.sendPushNotification(token.getToken(), title, message);
+                        } catch (Exception e) {
+                            System.err.println("Lỗi khi gửi thông báo đến token: " + token.getToken());
+                            e.printStackTrace();
+                        }
+                    }
+                });
+            }
+        });
     }
+
 
 
 
@@ -111,8 +135,6 @@ public class EpisodeService {
     public List<Episode> getAllEpisodes(String slug) {
         List<Episode> episodes = episodeRepository.findByFilmSlug(slug)
                 .orElseThrow(() -> new RuntimeException("Film id not found"));
-
-        // Trả về danh sách tập phim
         return episodes;
     }
 }
