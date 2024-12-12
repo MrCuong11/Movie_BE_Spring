@@ -11,8 +11,9 @@ public class Token {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id; // ID tự tăng
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, columnDefinition = "TEXT")
     private String token; // Lưu FCM Token
+
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)

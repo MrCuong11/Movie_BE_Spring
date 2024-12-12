@@ -13,6 +13,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/users")
 public class UserController {
@@ -39,5 +41,28 @@ public class UserController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Có lỗi xảy ra: " + e.getMessage());
         }
+    }
+
+    // API sửa người dùng
+    @PutMapping("/{uid}")
+    public ResponseEntity<User> updateUser(
+            @PathVariable String uid,
+            @RequestParam String email,
+            @RequestParam String username) {
+        User updatedUser = userService.updateUser(uid, email, username);
+        return ResponseEntity.ok(updatedUser);
+    }
+
+    // API xóa người dùng
+    @DeleteMapping("/{uid}")
+    public ResponseEntity<Void> deleteUser(@PathVariable String uid) {
+        userService.deleteUser(uid);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping
+    public ResponseEntity<List<User>> getAllUsers() {
+        List<User> users = userService.getAllUsers();
+        return ResponseEntity.ok(users);
     }
 }

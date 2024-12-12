@@ -19,4 +19,6 @@ public interface UserRepository extends JpaRepository<User, String> {
     @Query("SELECT u FROM User u WHERE u.userName IN :usernames")
     List<User> findByUserNameIn(@Param("usernames") List<String> usernames);
 
+    Optional<User> findByUid(String uid);
+    List<User> findAll();
 }
