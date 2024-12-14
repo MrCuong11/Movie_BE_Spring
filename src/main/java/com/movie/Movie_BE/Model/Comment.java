@@ -15,7 +15,6 @@ public class Comment {
     private Long id;
 
     private String content;
-    private String username;
     private LocalDateTime createdAt;
 
     @ManyToOne
@@ -24,8 +23,8 @@ public class Comment {
     private Film film;
 
     @ManyToOne
-    @JsonIgnore
     @JoinColumn(name = "user_id")
     private User user;
 
 }
+
