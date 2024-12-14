@@ -17,7 +17,9 @@ import java.util.Optional;
 public interface HistoryRepository extends JpaRepository<History, Long> {
     Page<History> findByUser(User user, Pageable pageable);
 
-    Optional<History> findByUserAndFilm(User user, Film film);
+    @Query("SELECT h FROM History h WHERE h.user = :user AND h.film = :film")
+    Optional<History> findByUserAndFilm(@Param("user") User user, @Param("film") Film film);
+
 
     List<History> findByUser(User user);
     @Transactional

@@ -7,15 +7,21 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.util.List;
-
 @Data
 @Entity
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@Table(name = "users")
+@Table(name = "users", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"userName"}),
+        @UniqueConstraint(columnNames = {"email"})
+})
 public class User {
     @Id
     private String uid;
+
+    @Column(nullable = false, unique = true)
     private String email;
+
+    @Column(nullable = false, unique = true)
     private String userName;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
@@ -26,7 +32,7 @@ public class User {
     @JsonIgnore
     private List<Comment> comments;
 
-    @OneToMany (mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore
     private List<Favorite> favorites;
 }

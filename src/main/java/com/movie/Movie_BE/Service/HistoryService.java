@@ -8,6 +8,7 @@ import com.movie.Movie_BE.Repository.FilmRepository;
 import com.movie.Movie_BE.Repository.HistoryRepository;
 import com.movie.Movie_BE.Repository.UserRepository;
 import com.movie.Movie_BE.dto.HistorySummary;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -32,28 +33,37 @@ public class HistoryService {
     @Autowired
     private FilmRepository filmRepository;
 
+    @Transactional
     public void saveWatchHistory(String username, Long filmId) {
+        // Tìm User từ username
         User user = userRepository.findByUserName(username)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new IllegalArgumentException("User not found with username: " + username));
 
+        // Tìm Film từ filmId
         Film film = filmRepository.findById(filmId)
-                .orElseThrow(() -> new IllegalArgumentException("Film not found"));
+                .orElseThrow(() -> new IllegalArgumentException("Film not found with ID: " + filmId));
 
+        // Tìm lịch sử xem dựa trên user và film
         Optional<History> existingHistory = historyRepository.findByUserAndFilm(user, film);
 
         if (existingHistory.isPresent()) {
+            // Nếu đã tồn tại, tăng view_count và cập nhật watch_time
             History history = existingHistory.get();
+            history.setViewCount(history.getViewCount() + 1);
             history.setWatchTime(LocalDateTime.now());
             historyRepository.save(history);
         } else {
-
+            // Nếu chưa tồn tại, tạo bản ghi mới
             History history = new History();
             history.setUser(user);
             history.setFilm(film);
             history.setWatchTime(LocalDateTime.now());
+            history.setViewCount(1); // Lần xem đầu tiên
             historyRepository.save(history);
         }
     }
+
+
 
 
 
