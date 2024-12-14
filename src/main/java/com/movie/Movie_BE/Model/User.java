@@ -30,4 +30,3 @@ public class User {
     @JsonIgnore
     private List<Favorite> favorites;
 }
-//    chưa xong

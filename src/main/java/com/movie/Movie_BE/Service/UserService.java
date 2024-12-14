@@ -58,6 +58,17 @@ public class UserService {
         }
     }
 
+
+    @Transactional
+    public User getUserById(String uid) {
+        User user = userRepository.findByUid(uid)
+                .orElseThrow(() -> new RuntimeException("User not found with uid: " + uid));
+
+        // cập nhật view mới
+//        userRepository.updateViewWithoutModified(user.getUid(), user.getView() + 100);
+        return user;
+    }
+
     // Xóa người dùng
     @Transactional
     public void deleteUser(String uid) {

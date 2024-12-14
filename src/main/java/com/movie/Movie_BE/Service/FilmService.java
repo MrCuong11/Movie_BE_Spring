@@ -19,7 +19,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -45,6 +44,8 @@ public class FilmService {
 
     @Autowired
     private ApplicationStateRepository applicationStateRepository;
+    @Autowired
+    private HistoryRepository historyRepository;
 
     @Autowired
     private TokenRepository tokenRepository;
@@ -385,9 +386,16 @@ public class FilmService {
 
 
     //delete film
+    @Transactional
     public void deleteFilm(Long id) {
+        // Tìm film theo id
         Film film = filmRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Film not found with id: " + id));
+
+        // Xóa các bản ghi liên quan trong history
+        historyRepository.deleteByFilmId(id);
+
+        // Xóa film
         filmRepository.delete(film);
     }
 

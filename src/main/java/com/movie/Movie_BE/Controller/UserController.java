@@ -60,9 +60,15 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping
+    @GetMapping("/all")
     public ResponseEntity<List<User>> getAllUsers() {
         List<User> users = userService.getAllUsers();
         return ResponseEntity.ok(users);
+    }
+
+    @GetMapping("/{uid}")
+    public ResponseEntity<User> getUserDetailById(@PathVariable String uid) {
+        User user = userService.getUserById(uid);
+        return ResponseEntity.ok(user);
     }
 }
