@@ -124,7 +124,7 @@ public class FilmService {
 
     //Filter film by type
     public Page<FilmSummary> filterFilmsByType(String type, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "view"));
         Page<Film> filmPage = filmRepository.findByType(type, pageable);
 
         Page<FilmSummary> filmSummariesPage = filmPage.map(film -> {
@@ -168,9 +168,9 @@ public class FilmService {
 
 
 
-    //find by category
+    //filter by category
     public Page<FilmSummary> filterFilmsByCategory(String categoryName, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "view"));
 
         // Tìm phim theo tên category
         Page<Film> filmPage = filmRepository.findByCategories_Name(categoryName, pageable);
@@ -194,7 +194,7 @@ public class FilmService {
 
     //find by country
     public Page<FilmSummary> filterFilmsByCountry(String countryName, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "view"));
 
         // Tìm phim theo tên quốc gia
         Page<Film> filmPage = filmRepository.findByCountries_Name(countryName, pageable);
