@@ -4,8 +4,10 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.UserRecord;
 import com.movie.Movie_BE.Model.Token;
 import com.movie.Movie_BE.Model.User;
+import com.movie.Movie_BE.Repository.NotificationRepository;
 import com.movie.Movie_BE.Repository.TokenRepository;
 import com.movie.Movie_BE.Repository.UserRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -23,6 +25,8 @@ public class UserService {
 
     @Autowired
     private FirebaseUserService firebaseUserService;
+    @Autowired
+    private NotificationRepository notificationRepository;
 
     public User saveUser(User user) {
         Optional<User> existingUser = userRepository.findByEmail(user.getEmail());
@@ -55,12 +59,16 @@ public class UserService {
     }
 
     // Xóa người dùng
+    @Transactional
     public void deleteUser(String uid) {
         Optional<User> optionalUser = userRepository.findByUid(uid);
         if (optionalUser.isPresent()) {
             User user = optionalUser.get();
 
-            // Xóa khỏi database
+            // Xóa các bản ghi con trong bảng Notification trước
+            notificationRepository.deleteByUserId(user.getUid());
+
+            // Xóa bản ghi User
             userRepository.delete(user);
 
             // Đồng bộ Firebase
@@ -69,6 +77,7 @@ public class UserService {
             throw new RuntimeException("User not found with UID: " + uid);
         }
     }
+
 
     // Lấy tất cả người dùng
     public List<User> getAllUsers() {
