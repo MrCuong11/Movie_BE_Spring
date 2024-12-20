@@ -6,6 +6,9 @@ import com.google.firebase.messaging.Notification;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @Service
 public class PushNotificationService {
     @Autowired
@@ -18,10 +21,14 @@ public class PushNotificationService {
                 .setTitle(title)  // Tiêu đề thông báo
                 .setBody(body)    // Nội dung thông báo
                 .build();
+        Map<String, String> data = new HashMap<>();
+        data.put("title", title);
+        data.put("body", body);
 
         // Tạo thông điệp FCM
         Message message = Message.builder()
                 .setToken(token)  // Token của thiết bị người nhận
+                .putAllData(data)  // Thông báo
                 .setNotification(notification)  // Thông báo
                 .build();
 
