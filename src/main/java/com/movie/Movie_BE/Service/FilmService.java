@@ -42,22 +42,22 @@ public class FilmService {
     NotificationService notificationService;
     @Autowired PushNotificationService pushNotificationService;
 
-    @Autowired
-    private ApplicationStateRepository applicationStateRepository;
+//    @Autowired
+//    private ApplicationStateRepository applicationStateRepository;
     @Autowired
     private HistoryRepository historyRepository;
 
     @Autowired
     private TokenRepository tokenRepository;
-    private Long previousTotalElements = 0L;
+//    private Long previousTotalElements = 0L;
 
     @PersistenceContext
     private EntityManager entityManager;
 
     //get lastest Film
     public Page<FilmSummary> getLatestFilms(int page, int size) {
-        applicationStateRepository.findTopByOrderByIdDesc()
-                .ifPresent(state -> previousTotalElements = state.getPreviousTotalElements());
+//        applicationStateRepository.findTopByOrderByIdDesc()
+//                .ifPresent(state -> previousTotalElements = state.getPreviousTotalElements());
 
         Pageable pageable = PageRequest.of(page, size);
         Page<Film> filmPage = filmRepository.findAll(pageable);
@@ -78,16 +78,16 @@ public class FilmService {
                 })
                 .collect(Collectors.toList());
 
-        // Gửi thông báo nếu có phim mới
-        if (previousTotalElements > 0 && filmPage.getTotalElements() > previousTotalElements) {
-            Long totalFilmUpdate = filmPage.getTotalElements() - previousTotalElements;
-            sendNotificationToUsers(totalFilmUpdate);
-        }
-
-        previousTotalElements = filmPage.getTotalElements();
-        ApplicationState applicationState = new ApplicationState();
-        applicationState.setPreviousTotalElements(previousTotalElements);
-        applicationStateRepository.save(applicationState);
+//        // Gửi thông báo nếu có phim mới
+//        if (previousTotalElements > 0 && filmPage.getTotalElements() > previousTotalElements) {
+//            Long totalFilmUpdate = filmPage.getTotalElements() - previousTotalElements;
+//            sendNotificationToUsers(totalFilmUpdate);
+//        }
+//
+//        previousTotalElements = filmPage.getTotalElements();
+//        ApplicationState applicationState = new ApplicationState();
+//        applicationState.setPreviousTotalElements(previousTotalElements);
+//        applicationStateRepository.save(applicationState);
 
         return new PageImpl<>(filmSummaries, pageable, filmPage.getTotalElements());
     }
@@ -234,9 +234,13 @@ public class FilmService {
 
 
 
-    //create list film
+    //create list film and send notification
+    @Transactional
     public List<Film> createFilms(List<FilmDTO> filmDTOs) {
         List<Film> createdFilms = new ArrayList<>();
+
+        // Lấy số lượng phim hiện tại trước khi thêm phim
+        long previousTotalElements = filmRepository.count();
 
         for (FilmDTO filmDTO : filmDTOs) {
             if (filmRepository.existsBySlug(filmDTO.getSlug())) {
@@ -260,18 +264,15 @@ public class FilmService {
             film.setActor(filmDTO.getActor());
             film.setDirector(filmDTO.getDirector());
 
-
             if (filmDTO.getCategoryIds() != null) {
                 List<Category> categories = categoryRepository.findAllById(filmDTO.getCategoryIds());
                 film.setCategories(categories);
             }
 
-
             if (filmDTO.getCountryIds() != null) {
                 List<Country> countries = countryRepository.findAllById(filmDTO.getCountryIds());
                 film.setCountries(countries);
             }
-
 
             if (filmDTO.getEpisodes() != null) {
                 List<Episode> episodes = filmDTO.getEpisodes().stream()
@@ -294,8 +295,18 @@ public class FilmService {
             createdFilms.add(savedFilm);
         }
 
+        // Lấy tổng số lượng phim sau khi thêm phim
+        long currentTotalElements = filmRepository.count();
+
+        // Gửi thông báo nếu có phim mới
+        if (currentTotalElements > previousTotalElements) {
+            long totalNewFilms = currentTotalElements - previousTotalElements;
+            sendNotificationToUsers(totalNewFilms);
+        }
+
         return createdFilms;
     }
+
 
 
 
@@ -421,6 +432,7 @@ public class FilmService {
         favorite.setUsername(favoriteDTO.getUsername());
         favorite.setFilm(film);
         favorite.setUser(user);
+        favorite.setFav(true);
         favorite.setCreatedAt(LocalDateTime.now());
 
         return favoriteRepository.save(favorite);
@@ -503,13 +515,18 @@ public class FilmService {
         List<Film> films = query.getResultList();
 
         films.sort((f1, f2) -> {
-            int yearComparison = Integer.compare(f2.getYear(), f1.getYear());
-            if (yearComparison != 0) {
-                return yearComparison;
+            int relevance1 = calculateRelevanceScore(f1, keywords);
+            int relevance2 = calculateRelevanceScore(f2, keywords);
+
+            if (relevance1 != relevance2) {
+                return Integer.compare(relevance2, relevance1);
             }
+            if(f1.getYear() != f2.getYear()){
+                return Integer.compare(f2.getYear(), f1.getYear());
+            }
+
             return Integer.compare(f2.getView(), f1.getView());
         });
-
 
         List<FilmSummary> filmSummaries = films.stream().map(film -> {
             FilmSummary summary = new FilmSummary();
@@ -526,4 +543,20 @@ public class FilmService {
 
         return filmSummaries;
     }
+
+    private int calculateRelevanceScore(Film film, String[] keywords) {
+        int score = 0;
+        String name = film.getName().toLowerCase();
+        String originName = film.getOrigin_name().toLowerCase();
+        String slug = film.getSlug().toLowerCase().replace("-", " ");
+
+        for (String keyword : keywords) {
+            if (name.contains(keyword)) score++;
+            if (originName.contains(keyword)) score++;
+            if (slug.contains(keyword)) score++;
+        }
+
+        return score;
+    }
+
 }

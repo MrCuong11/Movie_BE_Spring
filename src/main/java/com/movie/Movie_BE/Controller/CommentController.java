@@ -52,12 +52,13 @@ public class CommentController {
     // Xóa bình luận
     @Operation(summary = "Xóa bình luận", description = "Xóa một bình luận dựa trên ID bình luận và tên người dùng.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "Bình luận đã được xóa thành công"),
+            @ApiResponse(responseCode = "200", description = "Bình luận đã được xóa thành công"),
             @ApiResponse(responseCode = "404", description = "Không tìm thấy bình luận với ID đã cho hoặc người dùng không có quyền xóa")
     })
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteComment(@PathVariable Long id, @RequestParam String username) {
+    public ResponseEntity<String> deleteComment(@PathVariable Long id, @RequestParam String username) {
         commentService.deleteComment(id, username);
-        return ResponseEntity.noContent().build();
+        String response = "Bình luận được xóa thành công !";
+        return ResponseEntity.ok(response);
     }
 }

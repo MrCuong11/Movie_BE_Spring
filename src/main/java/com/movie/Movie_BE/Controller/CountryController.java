@@ -15,7 +15,7 @@ public class CountryController {
     @Autowired
     private CountryService countryService;
 
-    @GetMapping
+    @GetMapping({"","/"})
     public List<Country> getAllCountry(){
         return countryService.getAllCountry();
     }

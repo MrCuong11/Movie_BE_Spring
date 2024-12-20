@@ -16,6 +16,7 @@ public class Favorite {
     private Long id;
 
     private String username;
+    private boolean isFav;
     private LocalDateTime createdAt;
 
     @ManyToOne
